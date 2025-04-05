@@ -64,6 +64,27 @@ if (( ${+terminfo[smkx]} && ${+terminfo[rmkx]} )); then
       add-zle-hook-widget -Uz zle-line-finish zle_application_mode_stop
 fi
 
+function custom-eval-command() {
+    # Get command from Puffer
+    local BUFFER_CMD="$BUFFER"
+    if [[ $BUFFER_CMD == \#* ]]; then
+        local BUFFER_CMD="${BUFFER_CMD#\#}"  # Remove first sign if it's #
+        local BUFFER_CMD="${BUFFER_CMD## }"  # Removes leading spaces after #
+
+        # Combine buffer with 'sgpt'
+        BUFFER="sgpt --code $BUFFER_CMD"
+    fi
+
+    # Execute the command from buffer
+    zle accept-line
+}
+
+# Create zsh widget with shell gpt function
+zle -N custom-eval-command-widget custom-eval-command
+
+# Bind the Enter-Key with the new widget
+bindkey '^M' custom-eval-command-widget
+
 ## Completion
 zstyle ':completion:*' menu select     # select completions with arrow keys
 zstyle ':completion:*' group-name ''   # group results by category
@@ -140,9 +161,13 @@ zi light "MichaelAquilina/zsh-auto-notify" # automatically sends out a notificat
 AUTO_NOTIFY_IGNORE+=("docker" "ssh")
 
 ## Load or unload ENV variables from .envrc file depending on the current directory
-zi ice as"program" make'!' atclone'./direnv hook zsh > zhook.zsh' \
-  atpull'%atclone' src"zhook.zsh"
-zi light direnv/direnv
+## https://github.com/Tarrasch/zsh-autoenv
+AUTOENV_FILE_ENTER=.envrc
+zi light Tarrasch/zsh-autoenv
+
+#zi ice as"program" make'!' atclone'./direnv hook zsh > zhook.zsh' \
+#  atpull'%atclone' src"zhook.zsh"
+#zi light direnv/direnv
 
 ## Multi-word, syntax highlighted history searching for Zsh
 zstyle ":history-search-multi-word" page-size "11"
@@ -151,9 +176,11 @@ zi light zdharma/history-search-multi-word
 
 ## Multiple OhMyZSH plugins
 zi light skywind3000/z.lua          # navigate faster by learning your habits
-zi snippet OMZP::command-not-found  # provide suggested packages to be installed if a command cannot be found
+#zi snippet OMZP::command-not-found  # provide suggested packages to be installed if a command cannot be found
 zi snippet OMZP::extract            # extracts a wide variety of archive filetypes
 #zi snippet OMZP::thefuck            # corrects your previous console command
+
+source /usr/share/doc/pkgfile/command-not-found.zsh
 
 ## Colored man pages
 export LESS_TERMCAP_md=$(tput bold; tput setaf 1)
